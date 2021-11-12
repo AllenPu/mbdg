@@ -30,7 +30,11 @@ DATASETS = [
     "SVIRO",
     # WILDS datasets
     "WILDSCamelyon",
-    "WILDSFMoW"
+    "WILDSFMoW",
+    "EDGEvolCircle",
+    "EDGRPlate",
+    "EDGPortrait",
+    "EDGForestCover"
 ]
 
 def get_dataset_class(dataset_name):
@@ -352,3 +356,116 @@ class WILDSFMoW(WILDSDataset):
         dataset = FMoWDataset(root_dir=root)
         super().__init__(
             dataset, "region", test_envs, hparams['data_augmentation'], hparams)
+
+
+
+#
+# ADD NEW DATASET
+#
+class SimpleSyntheticDataset(MultipleDomainDataset):
+    def __init__(self, data_dir, test_envs, hparams):
+        self.data_dir = data_dir
+        # load data
+        data_pkl = self.load_data(data_dir)
+        # config
+        domain_num = len(list(set(data_pkl['domain'])))
+        self.input_shape = data_pkl['data'][0].shape
+        self.num_classes = len(list(set(data_pkl['label'])))
+        self.ENVIRONMENTS = ['Domain '+ str(i) for i in range(domain_num)]
+        # convert to torch Dataset
+        self.datasets = []
+        for d in range(domain_num):
+            # get x, y from data_pkl
+            idx = data_pkl['domain'] == d
+            x = data_pkl['data'][idx].astype(np.float32)
+            y = data_pkl['label'][idx].astype(np.int64)
+            y = torch.tensor(y).view(-1).long()  # turn  1, 2, 3 to 0, 1, 2
+            self.datasets.append(TensorDataset(torch.tensor(x).float(), y))
+
+    def load_data(self, path=None):
+        if not path: raise NotImplementedError
+        return self.read_pickle(path)
+
+    def read_pickle(self, name):
+        with open(name, 'rb') as f:
+            data = pickle.load(f)
+        return data
+
+#########
+class EDGRPlate(SimpleSyntheticDataset):
+    def __init__(self, data_dir, test_envs, hparams):
+        super(EDGRPlate, self).__init__(
+            '../datasets_for_domainbed/RPlate/data/RPlate.pkl',
+            test_envs, hparams)
+
+
+#########
+class EDGEvolCircle(SimpleSyntheticDataset):
+    def __init__(self, data_dir, test_envs, hparams):
+        super(EDGEvolCircle, self).__init__(
+            '../datasets_for_domainbed/toy-circle/data/half-circle.pkl',
+            test_envs, hparams)
+
+##########
+class EDGForestCover(MultipleDomainDataset):
+    def __init__(self, data_dir, test_envs, hparams):
+        self.data_dir = data_dir
+
+        COL = 'Elevation'
+        MAX = 3451  # df[COL].max()
+        MIN = 2061  # df[COL].min()
+        COUNT = hparams['env_number']
+
+        # pre
+        self.datasets = []
+        # df = self.load_forestcover_data().drop('Id', axis = 1)
+        df = self.load_forestcover_data()
+        # MAX = df[COL].max() # 3451 # df[col].max()
+        # MIN = df[COL].min() # 2061 # df[col].min()
+        bins = np.arange(MIN, MAX, (MAX - MIN)/COUNT)
+        se1 = pd.cut(df[COL], bins)
+        df = df.drop(COL, axis=1)
+        gb = df.groupby(se1)
+        gbs = [gb.get_group(x) for x in gb.groups]
+        # groupby('Cover_Type').size()
+        for each in gbs:
+            print(each.groupby('label').size())
+        gbs = [self.get_xy_from_df(each) for each in gbs]
+        for x, y in gbs:
+            y = torch.tensor(y).view(-1).long()  # turn  1, 2, 3 to 0, 1, 2
+            # print(y)
+            self.datasets.append(TensorDataset(torch.tensor(x).float(), y))
+        self.input_shape = (54, )
+        self.num_classes = 2
+        self.ENVIRONMENTS = [str(i)
+                             for i in range(COUNT-1)]
+        return
+
+    def load_forestcover_data(self, path='ForestCover/train.csv'):
+        df = pd.read_csv(os.path.join(self.data_dir, path))
+        df = df.rename(columns={"Cover_Type": "label"})
+        df = self.group_labels(df)
+        df = df.drop('Id', axis=1)
+        df = df.sample(frac=1).reset_index(drop=True)
+        df = df.sample(frac=1).reset_index(drop=False)  # [index, label]
+        return df
+
+    def group_labels(self, df):
+        groups = [
+            [0, 1, 6, 3],
+            [4, 5, 2, 7],
+        ]
+        # print(df)
+
+        def new_label(row):
+            for new_l in range(len(groups)):
+                if row['label'] in groups[new_l]:
+                    return new_l
+        df['label'] = df.apply(new_label, axis=1)
+        # print(df)
+        return df
+
+    def get_xy_from_df(self, df):
+        Y = df['label'].to_numpy()
+        X = df.drop('label', axis='columns').to_numpy()
+        return (X, Y)

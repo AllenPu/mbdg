@@ -51,6 +51,11 @@ if __name__ == "__main__":
         help="For domain adaptation, % of test to use unlabeled for training.")
     parser.add_argument('--skip_model_save', action='store_true')
     parser.add_argument('--save_model_every_checkpoint', action='store_true')
+    parser.add_argument('--env_distance', type=int, default=10)
+    parser.add_argument('--env_number', type=int, default=12)
+    parser.add_argument('--env_sample_number', type=int, default=200)
+    parser.add_argument('--total_sample_number', type=int, default=0)
+    parser.add_argument('--env_sample_ratio', type=float, default=0.5)
     args = parser.parse_args()
 
     # If we ever want to implement checkpointing, just persist these values
@@ -82,7 +87,11 @@ if __name__ == "__main__":
             misc.seed_hash(args.hparams_seed, args.trial_seed), args.test_envs)
     if args.hparams:
         hparams.update(json.loads(args.hparams))
-
+    hparams['env_distance'] = args.env_distance
+    hparams['env_number'] = args.env_number
+    hparams['env_sample_number'] = args.env_sample_number
+    hparams['env_sample_ratio'] = args.env_sample_ratio
+    hparams['total_sample_number'] = args.total_sample_number
     print('HParams:')
     for k, v in sorted(hparams.items()):
         print('\t{}: {}'.format(k, v))
