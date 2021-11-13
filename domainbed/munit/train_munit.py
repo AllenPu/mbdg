@@ -38,7 +38,10 @@ display_size = config['display_size']
 config['vgg_model_path'] = args.output_path
 
 # Setup model and data loader
-device = torch.device('cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device("cpu")
 #trainer = torch.nn.DataParallel(MUNIT_Trainer(config))
 trainer = MUNIT_Trainer(config)
 trainer.to(device)
