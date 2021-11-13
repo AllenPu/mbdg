@@ -19,7 +19,9 @@ import sys
 import shutil
 
 parser = argparse.ArgumentParser(description='PyTorch training')
-parser.add_argument('--config', type=str, default='models/munit/munit.yaml', 
+#parser.add_argument('--config', type=str, default='models/munit/munit.yaml',
+#                        help='Path to the MUNIT config file.')
+parser.add_argument('--config', type=str, default='core/munit.yaml',
                         help='Path to the MUNIT config file.')
 parser.add_argument('--output_path', type=str, default='./models/results', 
                         help="Path where images/checkpoints will be saved")
@@ -36,15 +38,16 @@ display_size = config['display_size']
 config['vgg_model_path'] = args.output_path
 
 # Setup model and data loader
-device = torch.device('cuda')
-trainer = torch.nn.DataParallel(MUNIT_Trainer(config))
+device = torch.device('cpu')
+#trainer = torch.nn.DataParallel(MUNIT_Trainer(config))
+trainer = MUNIT_Trainer(config)
 trainer.to(device)
 
 train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_mnist_loaders()
-train_display_images_a = torch.stack([train_loader_a.dataset[i] for i in range(display_size)]).cuda()
-train_display_images_b = torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).cuda()
-test_display_images_a = torch.stack([test_loader_a.dataset[i] for i in range(display_size)]).cuda()
-test_display_images_b = torch.stack([test_loader_b.dataset[i] for i in range(display_size)]).cuda()
+train_display_images_a = torch.stack([train_loader_a.dataset[i] for i in range(display_size)])
+train_display_images_b = torch.stack([train_loader_b.dataset[i] for i in range(display_size)])
+test_display_images_a = torch.stack([test_loader_a.dataset[i] for i in range(display_size)])
+test_display_images_b = torch.stack([test_loader_b.dataset[i] for i in range(display_size)])
 
 # Setup logger and output folders
 model_name = os.path.splitext(os.path.basename(args.config))[0]
@@ -58,13 +61,13 @@ iterations = trainer.module.resume(checkpoint_directory, hyperparameters=config)
 while True:
     for it, (images_a, images_b) in enumerate(zip(train_loader_a, train_loader_b)):
         trainer.module.update_learning_rate()
-        images_a, images_b = images_a.cuda().detach(), images_b.cuda().detach()
+        images_a, images_b = images_a.to(device).detach(), images_b.to(device).detach()
 
         with Timer("Elapsed time in update: %f"):
             # Main training code
             trainer.module.dis_update(images_a, images_b, config)
             trainer.module.gen_update(images_a, images_b, config)
-            torch.cuda.synchronize()
+            #torch.cuda.synchronize()
 
         # Dump training stats in log file
         if (iterations + 1) % config['log_iter'] == 0:
