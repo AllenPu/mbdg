@@ -13,7 +13,10 @@ class MultipleDomainDataset:
     INPUT_SHAPE = None       # Subclasses should override
 
     def __getitem__(self, index):
-        return self.datasets[index]
+        x = self.datasets[index]
+        x = x.unsqueeze(0)
+        #return the same size in [1,28,28]
+        return x
 
     def __len__(self):
         return len(self.datasets)
@@ -43,19 +46,14 @@ class RMNIST(MultipleDomainDataset):
 
         self.datasets = []
 
-        for i in range(len(environments)):
-            images = original_images[i::len(environments)]
-            labels = original_labels[i::len(environments)]
-            self.datasets.append(self.rotate_dataset(images, labels, environments[i]))
+        index = int(environments/10)
+        images = original_images[index*num_picture:(index+1)*num_picture]
+        labels = original_labels[index*num_picture:(index+1)*num_picture]
+        self.datasets.append(self.rotate_dataset(images, labels, environments))
 
         #self.input_shape = input_shape
         #self.num_classes = num_classes
 
-    def __getitem__(self, index):
-        return self.datasets[index]
-
-    def __len__(self):
-        return len(self.datasets)
 
     def rotate_dataset(self, images, labels, angle):
         rotation = transforms.Compose([
@@ -64,19 +62,22 @@ class RMNIST(MultipleDomainDataset):
                 interpolation=torchvision.transforms.InterpolationMode.BILINEAR)),
             transforms.ToTensor()])
 
-        x = torch.zeros(len(images), 1, 28, 28)
+        x = torch.zeros(len(images), 1, 32, 32)
         for i in range(len(images)):
             x[i] = rotation(images[i])
         y = labels.view(-1)
         return TensorDataset(x, y)
 
-def get_mnist_loaders():
-    environment = ['0','10','20','30','40','50','60','70']
+def get_rmnist_loaders():
+    environment = [str(i*10) for i in range(5)]
     domain_list = []
     for i in environment:
-        picture = RMNIST('../data/MNIST', int(i), 1)
+        picture = RMNIST('../data/MNIST', int(i), 20)
         domain_list.append(picture)
     datasets = ConcatDataset(domain_list)
     # each time pickup one picture
     loader = DataLoader(datasets, batch_size=1, num_workers=4, pin_memory=True)
     return loader, loader, loader, loader
+
+if __name__ == '__main__':
+    get_rmnist_loaders()
