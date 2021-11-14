@@ -8,7 +8,7 @@ import argparse
 from core.utils import prepare_sub_folder, write_html, write_loss, get_config, write_2images, Timer
 from core.trainer import MUNIT_Trainer
 from datasets import get_mnist_loaders
-
+from rmnist_dataset import get_rmnist_loaders
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -46,12 +46,15 @@ trainer = torch.nn.DataParallel(MUNIT_Trainer(config))
 #trainer = MUNIT_Trainer(config)
 trainer.to(device)
 
-train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_mnist_loaders()
+#train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_mnist_loaders()
+train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_rmnist_loaders()
 train_display_images_a = torch.stack([train_loader_a.dataset[i] for i in range(display_size)]).to(device)
 train_display_images_b = torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).to(device)
 test_display_images_a = torch.stack([test_loader_a.dataset[i] for i in range(display_size)]).to(device)
 test_display_images_b = torch.stack([test_loader_b.dataset[i] for i in range(display_size)]).to(device)
 
+
+#torch.freeze_support()
 # Setup logger and output folders
 model_name = os.path.splitext(os.path.basename(args.config))[0]
 train_writer = tensorboardX.SummaryWriter(os.path.join(args.output_path + "/logs", model_name))
@@ -65,7 +68,7 @@ while True:
     for it, (images_a, images_b) in enumerate(zip(train_loader_a, train_loader_b)):
         trainer.module.update_learning_rate()
         images_a, images_b = images_a.to(device).detach(), images_b.to(device).detach()
-
+        #print("aaaa   ", images_a.shape)
         with Timer("Elapsed time in update: %f"):
             # Main training code
             trainer.module.dis_update(images_a, images_b, config)

@@ -56,6 +56,7 @@ class ColoredMNIST(Dataset):
     def __getitem__(self, index):
         x = self.dataset[index]
         x = torch.cat([x, torch.zeros(1, 32, 32)], dim=0)
+        #print(" type ", type(x))
         return x
 
     def __len__(self):
@@ -68,7 +69,7 @@ def get_mnist_loaders():
     env1_dataset = ColoredMNIST(env=0.2, env_idx=1, n_envs=2)
     env3_dataset = ColoredMNIST(env=0.9, env_idx=2, n_envs=2)
     datasets = ConcatDataset([env1_dataset, env3_dataset])
-    loader = DataLoader(datasets, batch_size=1, num_workers=4, pin_memory=True)
+    loader = DataLoader(datasets, batch_size=1,  pin_memory=True)
 
     return loader, loader, loader, loader
 

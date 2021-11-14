@@ -1,11 +1,14 @@
 import torch
 import torchvision
+from torchvision import transforms
 from torch.utils.data import ConcatDataset, TensorDataset, DataLoader
 from torchvision import transforms
 from torchvision.datasets import MNIST
 from torchvision.transforms.functional import rotate
+from PIL import Image
+from torch.utils.data import Dataset
 
-class MultipleDomainDataset:
+class MultipleDomainDataset():
     N_STEPS = 5001           # Default, subclasses may override
     CHECKPOINT_FREQ = 100    # Default, subclasses may override
     N_WORKERS = 8            # Default, subclasses may override
@@ -14,8 +17,9 @@ class MultipleDomainDataset:
 
     def __getitem__(self, index):
         x = self.datasets[index]
-        x = x.unsqueeze(0)
-        #return the same size in [1,28,28]
+        x = torch.cat([x, self.datasets[index]], dim=0)
+        x = torch.cat([x, self.datasets[index]], dim=0)
+        #x = x.unsqueeze(0)
         return x
 
     def __len__(self):
@@ -44,13 +48,15 @@ class RMNIST(MultipleDomainDataset):
         original_images = original_images[shuffle]
         original_labels = original_labels[shuffle]
 
-        self.datasets = []
+        #self.datasets = 0
 
         index = int(environments/10)
         images = original_images[index*num_picture:(index+1)*num_picture]
+        print("aaa     ", images.shape)
+        print("bbb     ", len(images))
         labels = original_labels[index*num_picture:(index+1)*num_picture]
-        self.datasets.append(self.rotate_dataset(images, labels, environments))
-
+        #self.datasets.append(self.rotate_dataset(images, labels, environments))
+        self.datasets = self.rotate_dataset(images, labels, environments)
         #self.input_shape = input_shape
         #self.num_classes = num_classes
 
@@ -58,25 +64,24 @@ class RMNIST(MultipleDomainDataset):
     def rotate_dataset(self, images, labels, angle):
         rotation = transforms.Compose([
             transforms.ToPILImage(),
-            transforms.Lambda(lambda x: rotate(x, angle, fill=(0,),
-                interpolation=torchvision.transforms.InterpolationMode.BILINEAR)),
+            transforms.Lambda(lambda x: rotate(x, angle, fill=(0,),resample=Image.BICUBIC)),
             transforms.ToTensor()])
 
         x = torch.zeros(len(images), 1, 32, 32)
         for i in range(len(images)):
             x[i] = rotation(images[i])
         y = labels.view(-1)
-        return TensorDataset(x, y)
+        return x.float()
 
 def get_rmnist_loaders():
-    environment = [str(i*10) for i in range(5)]
+    environment = [str(i*10) for i in range(10)]
     domain_list = []
     for i in environment:
-        picture = RMNIST('../data/MNIST', int(i), 20)
+        picture = RMNIST('../data/MNIST', int(i), 200)
         domain_list.append(picture)
     datasets = ConcatDataset(domain_list)
     # each time pickup one picture
-    loader = DataLoader(datasets, batch_size=1, num_workers=4, pin_memory=True)
+    loader = DataLoader(datasets, batch_size=1, num_workers=0, pin_memory=True)
     return loader, loader, loader, loader
 
 if __name__ == '__main__':
