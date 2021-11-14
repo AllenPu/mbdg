@@ -17,9 +17,6 @@ class MultipleDomainDataset():
 
     def __getitem__(self, index):
         x = self.datasets[index]
-        x = torch.cat([x, self.datasets[index]], dim=0)
-        x = torch.cat([x, self.datasets[index]], dim=0)
-        #x = x.unsqueeze(0)
         return x
 
     def __len__(self):
