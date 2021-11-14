@@ -52,8 +52,6 @@ class RMNIST(MultipleDomainDataset):
 
         index = int(environments/10)
         images = original_images[index*num_picture:(index+1)*num_picture]
-        print("aaa     ", images.shape)
-        print("bbb     ", len(images))
         labels = original_labels[index*num_picture:(index+1)*num_picture]
         #self.datasets.append(self.rotate_dataset(images, labels, environments))
         self.datasets = self.rotate_dataset(images, labels, environments)
