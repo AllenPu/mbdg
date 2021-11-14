@@ -42,15 +42,15 @@ if torch.cuda.is_available():
     device = torch.device('cuda')
 else:
     device = torch.device("cpu")
-#trainer = torch.nn.DataParallel(MUNIT_Trainer(config))
-trainer = MUNIT_Trainer(config)
+trainer = torch.nn.DataParallel(MUNIT_Trainer(config))
+#trainer = MUNIT_Trainer(config)
 trainer.to(device)
 
 train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_mnist_loaders()
-train_display_images_a = torch.stack([train_loader_a.dataset[i] for i in range(display_size)])
-train_display_images_b = torch.stack([train_loader_b.dataset[i] for i in range(display_size)])
-test_display_images_a = torch.stack([test_loader_a.dataset[i] for i in range(display_size)])
-test_display_images_b = torch.stack([test_loader_b.dataset[i] for i in range(display_size)])
+train_display_images_a = torch.stack([train_loader_a.dataset[i] for i in range(display_size)]).to(device)
+train_display_images_b = torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).to(device)
+test_display_images_a = torch.stack([test_loader_a.dataset[i] for i in range(display_size)]).to(device)
+test_display_images_b = torch.stack([test_loader_b.dataset[i] for i in range(display_size)]).to(device)
 
 # Setup logger and output folders
 model_name = os.path.splitext(os.path.basename(args.config))[0]
