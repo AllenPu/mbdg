@@ -9,8 +9,8 @@ from torch.utils.data import TensorDataset, Subset, ConcatDataset
 from torchvision.datasets import MNIST, ImageFolder
 from torchvision.transforms.functional import rotate
 
-from wilds.datasets.camelyon17_dataset import Camelyon17Dataset
-from wilds.datasets.fmow_dataset import FMoWDataset
+#from wilds.datasets.camelyon17_dataset import Camelyon17Dataset
+#from wilds.datasets.fmow_dataset import FMoWDataset
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -168,10 +168,10 @@ class RotatedMNIST(MultipleEnvironmentMNIST):
         rotation = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Lambda(lambda x: rotate(x, angle, fill=(0,),
-                interpolation=torchvision.transforms.InterpolationMode.BILINEAR)),
+                resample=Image.BICUBIC)),
             transforms.ToTensor()])
 
-        x = torch.zeros(len(images), 1, 28, 28)
+        x = torch.zeros(len(images), 1, 32, 32)
         for i in range(len(images)):
             x[i] = rotation(images[i])
 

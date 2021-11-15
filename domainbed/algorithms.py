@@ -39,6 +39,11 @@ ALGORITHMS = [
     'IGA'
 ]
 
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device("cpu")
+
 def get_algorithm_class(algorithm_name):
     """Return the algorithm class with the given name."""
     if algorithm_name not in globals():
@@ -122,7 +127,7 @@ class MBDG_Base(ERM):
 
     @torch.no_grad()
     def generate_images(self, images):
-        delta = torch.randn(images.size(0), self.G.delta_dim, 1, 1).cuda().requires_grad_(False)
+        delta = torch.randn(images.size(0), self.G.delta_dim, 1, 1).to(device).requires_grad_(False)
         return self.G(images, delta)
 
     def calc_dist_reg(self, x, clean_output):
@@ -132,7 +137,7 @@ class MBDG_Base(ERM):
 
     @staticmethod
     def relu(x):
-        return x if x > 0 else torch.tensor(0).cuda()
+        return x if x > 0 else torch.tensor(0).to(device)
 
 class MBDG_Reg(MBDG_Base):
 
@@ -159,7 +164,7 @@ class MBDG(MBDG_Base):
 
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         super(MBDG, self).__init__(input_shape, num_classes, num_domains, hparams)
-        self.dual_var = torch.tensor(1.0).cuda().requires_grad_(False)
+        self.dual_var = torch.tensor(1.0).to(device).requires_grad_(False)
 
     def update(self, minibatches, unlabeled=None):
         all_x = torch.cat([x for x,y in minibatches])

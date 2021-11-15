@@ -149,11 +149,15 @@ def _hparams(algorithm, dataset, random_seed, test_envs):
         elif dataset == 'VLCS':
             model_root = './domainbed/munit/saved_models/vlcs/new'
 
+        elif dataset == 'RotatedMNIST':
+            model_root = '/Users/ruizhipu/Desktop/wang/mbdg/domainbed/munit/models/results/outputs/munit/checkpoints'
+
         else:
             raise NotImplementedError(f'Dataset {dataset} not implemented for MBDG')
 
-        model_path = os.path.join(model_root,
-            f'model-dom{"".join([str(e) for e in test_envs])}.pt')
+        #model_path = os.path.join(model_root,
+        #    f'model-dom{"".join([str(e) for e in test_envs])}.pt')
+        model_path = os.path.join(model_root, 'gen_00020000.pt')
         config_path = os.path.join(model_root, 'config.yaml')
 
         _hparam('mbdg_model_path', model_path, lambda r: model_path)

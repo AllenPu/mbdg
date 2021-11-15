@@ -14,7 +14,10 @@ import torch.nn as nn
 
 from domainbed.munit.core.networks import AdaINGen
 from torchvision.utils import save_image
-
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device("cpu")
 
 def load_munit_model(model_path, config_path, reverse=False):
     """Load MUNIT model."""
@@ -22,7 +25,7 @@ def load_munit_model(model_path, config_path, reverse=False):
     with open(config_path, 'r') as stream:
         config = yaml.load(stream, Loader=yaml.FullLoader)
 
-    return MUNITModelOfNatVar(model_path, reverse=reverse, config=config).cuda()
+    return MUNITModelOfNatVar(model_path, reverse=reverse, config=config).to(device)
 
 def load_composition_model(model_dict, reverse=False):
     pass
@@ -50,7 +53,7 @@ class MUNITModelOfNatVar(nn.Module):
     # for MNIST
     def forward(self, x, delta):
 
-        x = torch.cat([x, torch.zeros(x.size(0), 1, 32, 32).cuda()], dim=1)
+        x = torch.cat([x, torch.zeros(x.size(0), 1, 32, 32).to(device)], dim=1)
         orig_content, _ = self._gen_A.encode(x)
         orig_content = orig_content.clone().detach().requires_grad_(False)
         x_out = self._gen_B.decode(orig_content, delta)
